@@ -35,12 +35,12 @@ make
 
 ```
 AHRS/
-├── Makefile                 # 交叉编译（Rockchip RV1106）
+├── Makefile                 
 ├── README.md
 └── src/
     ├── main.cpp             # 入口，命令行解析，主循环
     ├── platform/
-    │   ├── iic_interface.h  # I2C 抽象接口（3 个纯虚方法）
+    │   ├── iic_interface.h  # I2C 抽象接口
     │   └── iic_linux.cpp    # Linux I2C 实现（/dev/i2c-N）
     ├── driver/
     │   ├── mpu6050_reg.h    # MPU6050 全部寄存器 & 配置枚举
@@ -51,7 +51,7 @@ AHRS/
     │   ├── iekf.h              # Left-Invariant EKF 声明
     │   └── iekf.cpp            # 6×6 协方差、预测/更新、陀螺仪偏置估计
     └── debug/
-        └── debug_logger.h      # NDJSON 调试日志 (/tmp/mpu6050_debug.ndjson)
+        └── debug_logger.h      
 ```
 
 ## 融合算法
