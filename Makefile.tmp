@@ -1,0 +1,18 @@
+CROSS_COMPILE =
+CC      = $(CROSS_COMPILE)gcc
+CXX     = $(CROSS_COMPILE)g++
+CFLAGS  = -Wall -O2
+CXXFLAGS= -Wall -O2 -std=c++17 -Isrc
+LDFLAGS = -lpthread -lrt
+TARGET  = main
+SRCS    = src/main.cpp
+
+all: $(TARGET)
+
+$(TARGET): $(SRCS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+clean:
+	rm -f $(TARGET)
+
+.PHONY: all clean
