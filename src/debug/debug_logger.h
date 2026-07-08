@@ -58,5 +58,13 @@ inline void logEuler(const char* algo, float roll, float pitch, float yaw) {
             algo, roll, pitch, yaw));
 }
 
+inline void logCompare(float t,
+                       float acc_r, float acc_p,
+                       float gyr_r, float gyr_p, float gyr_y,
+                       float iekf_r, float iekf_p, float iekf_y) {
+    log(fmt("{\"t\":%.3f,\"acc_r\":%.3f,\"acc_p\":%.3f,\"gyr_r\":%.3f,\"gyr_p\":%.3f,\"gyr_y\":%.3f,\"iekf_r\":%.3f,\"iekf_p\":%.3f,\"iekf_y\":%.3f}",
+            t, acc_r, acc_p, gyr_r, gyr_p, gyr_y, iekf_r, iekf_p, iekf_y));
+}
+
 } // namespace debug
 #endif // DEBUG_LOGGER_H

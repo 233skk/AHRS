@@ -19,6 +19,8 @@
 
 static FusionAlgorithm* g_algo = nullptr;
 static volatile bool    g_run  = true;
+static bool    g_gyro_init  = false;
+static float   g_gyro_roll = 0, g_gyro_pitch = 0, g_gyro_yaw = 0;
 
 void sigHandler(int) { g_run = false; }
 
@@ -68,12 +70,36 @@ int main(int argc, char* argv[]) {
 
                 g_algo->update(gx_r, gy_r, gz_r, ax_g, ay_g, az_g, dt);
 
+                // 纯加速度计角度
+                float acc_roll  = atan2f(ay_g, az_g);
+                float acc_pitch = atan2f(-ax_g, sqrtf(ay_g*ay_g + az_g*az_g));
+
+                // 纯陀螺积分（从加速度计角度初始化）
+                if (!g_gyro_init) {
+                    g_gyro_roll  = acc_roll;
+                    g_gyro_pitch = acc_pitch;
+                    g_gyro_yaw  = 0.0f;
+                    g_gyro_init  = true;
+                }
+                g_gyro_roll  += gx_r * dt;
+                g_gyro_pitch += gy_r * dt;
+                g_gyro_yaw   += gz_r * dt;
+
                 float qw, qx, qy, qz, roll, pitch, yaw;
                 g_algo->getQuaternion(qw, qx, qy, qz);
                 g_algo->getEuler(roll, pitch, yaw);
                 float rd = FusionAlgorithm::radToDeg(roll);
                 float pd = FusionAlgorithm::radToDeg(pitch);
                 float yd = FusionAlgorithm::radToDeg(yaw);
+
+                // 写对比日志（角度统一转度）
+                debug::logCompare(elapsed/1000.0f,
+                    FusionAlgorithm::radToDeg(acc_roll),
+                    FusionAlgorithm::radToDeg(acc_pitch),
+                    FusionAlgorithm::radToDeg(g_gyro_roll),
+                    FusionAlgorithm::radToDeg(g_gyro_pitch),
+                    FusionAlgorithm::radToDeg(g_gyro_yaw),
+                    rd, pd, yd);
 
                 auto* iekf = dynamic_cast<IEKFFilter*>(g_algo);
                 float bx=0, by=0, bz=0;
