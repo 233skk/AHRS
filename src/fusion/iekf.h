@@ -54,7 +54,6 @@ private:
     void initFromAccel(float ax, float ay, float az);
     void applyCorrection(float dxi_x, float dxi_y, float dxi_z,
                          float dze_x, float dze_y, float dze_z);
-    void covUpdate(const float* K, int meas_dim);
 };
 
 #endif

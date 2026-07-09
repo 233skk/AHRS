@@ -21,6 +21,32 @@ static FusionAlgorithm* g_algo = nullptr;
 static volatile bool    g_run  = true;
 static bool    g_gyro_init  = false;
 static float   g_gyro_roll = 0, g_gyro_pitch = 0, g_gyro_yaw = 0;
+static FILE*   g_csv_file  = nullptr;
+
+void openCSV() {
+    g_csv_file = fopen("/tmp/mpu6050_fusion.csv", "w");
+    if (g_csv_file) {
+        fprintf(g_csv_file, "t_ms,gyr_roll,gyr_pitch,gyr_yaw,fus_roll,fus_pitch,fus_yaw\n");
+        fflush(g_csv_file);
+    }
+}
+
+void writeCSV(float t_ms,
+              float gyr_r, float gyr_p, float gyr_y,
+              float fus_r, float fus_p, float fus_y) {
+    if (g_csv_file) {
+        fprintf(g_csv_file, "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n",
+                t_ms, gyr_r, gyr_p, gyr_y, fus_r, fus_p, fus_y);
+        fflush(g_csv_file);
+    }
+}
+
+void closeCSV() {
+    if (g_csv_file) {
+        fclose(g_csv_file);
+        g_csv_file = nullptr;
+    }
+}
 
 void sigHandler(int) { g_run = false; }
 
@@ -47,6 +73,8 @@ int main(int argc, char* argv[]) {
         if (!imu.init()) { std::cerr << "MPU6050 失败!\n"; return -1; }
         std::cout << "WHO_AM_I: " << (imu.whoAmI() ? "OK" : "FAIL")
                   << " | 200Hz | Ctrl+C 退出\n\n";
+
+        openCSV();
 
         int16_t ax, ay, az, gx, gy, gz;
         struct timespec ts_start, ts_prev, ts_now;
@@ -92,10 +120,8 @@ int main(int argc, char* argv[]) {
                 float pd = FusionAlgorithm::radToDeg(pitch);
                 float yd = FusionAlgorithm::radToDeg(yaw);
 
-                // 写对比日志（角度统一转度）
-                debug::logCompare(elapsed/1000.0f,
-                    FusionAlgorithm::radToDeg(acc_roll),
-                    FusionAlgorithm::radToDeg(acc_pitch),
+                // 写CSV对比日志（6列：时间+纯陀螺仪R/P/Y+融合R/P/Y）
+                writeCSV(elapsed,
                     FusionAlgorithm::radToDeg(g_gyro_roll),
                     FusionAlgorithm::radToDeg(g_gyro_pitch),
                     FusionAlgorithm::radToDeg(g_gyro_yaw),
@@ -117,6 +143,7 @@ int main(int argc, char* argv[]) {
         }
     } catch (const std::exception& e) { std::cerr << "\n异常: " << e.what() << "\n"; }
 
+    closeCSV();
     delete g_algo;
     std::cout << "\n已退出\n";
     return 0;
