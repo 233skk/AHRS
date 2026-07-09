@@ -224,12 +224,10 @@ void IEKFFilter::updateAccel(float ax, float ay, float az) {
     // δx = K·ν
     float dxi_x = K[0]*nux  + K[1]*nuy  + K[2]*nuz;
     float dxi_y = K[3]*nux  + K[4]*nuy  + K[5]*nuz;
-    // 加速度计不提供 yaw 信息 — 显式置零防止倾斜漏电累积
-    float dxi_z = 0;
+    float dxi_z = K[6]*nux  + K[7]*nuy  + K[8]*nuz;
     float dze_x = K[9]*nux  + K[10]*nuy + K[11]*nuz;
     float dze_y = K[12]*nux + K[13]*nuy + K[14]*nuz;
-    // 加速度计不提供 z 轴偏置信息
-    float dze_z = 0;
+    float dze_z = K[15]*nux + K[16]*nuy + K[17]*nuz;
 
     // 误差注入: q ← q ⊗ exp_q(ξ), b ← b + ζ
     float dangle = sqrtf(dxi_x*dxi_x + dxi_y*dxi_y + dxi_z*dxi_z);
