@@ -2,6 +2,8 @@
 
 > MPU6050 六轴姿态航向参考系统，基于左不变扩展卡尔曼滤波（Left-Invariant EKF）
 
+![Preview](doc/Figure_1.png)
+
 ## 快速开始
 
 ### 编译
@@ -79,6 +81,11 @@ class IICInterface {
 
 - `iic_linux.cpp` — Linux / Raspberry Pi / Luckfox
 - 可扩展：Arduino Wire、STM32 HAL、ESP-IDF
+
+## TODO
+
+- [ ] 优化计算效率
+- [ ] 高加速度场景下收敛速度不足，需修正自适应 Q 策略或引入加速度计量测异常检测
 
 ## License
 
