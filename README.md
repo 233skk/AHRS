@@ -1,6 +1,6 @@
 # AHRS
 
-> MPU6050 六轴姿态航向参考系统，基于左不变扩展卡尔曼滤波（Left-Invariant EKF）
+> MPU6050 + HMC5883L 九轴姿态航向参考系统，基于左不变扩展卡尔曼滤波（Left-Invariant EKF）
 
 ![Preview](doc/Figure_1.png)
 
@@ -39,15 +39,23 @@ make
 AHRS/
 ├── Makefile                 
 ├── README.md
+├── doc/
+│   └── Figure_1.png        # 效果预览
 └── src/
     ├── main.cpp             # 入口，命令行解析，主循环
+    ├── mag_calib_main.cpp   # 磁力计椭球校准工具
+    ├── calibration/
+    │   └── mag_calibration.h # 硬铁+软铁椭球拟合校准
     ├── platform/
     │   ├── iic_interface.h  # I2C 抽象接口
     │   └── iic_linux.cpp    # Linux I2C 实现（/dev/i2c-N）
     ├── driver/
     │   ├── mpu6050_reg.h    # MPU6050 全部寄存器 & 配置枚举
-    │   ├── mpu6050.h        # 传感器驱动类
-    │   └── mpu6050.cpp      # 初始化、6轴读取、温度
+    │   ├── mpu6050.h        # MPU6050 传感器驱动类
+    │   ├── mpu6050.cpp      # MPU6050 初始化、6轴读取、温度
+    │   ├── hmc5883l_reg.h   # HMC5883L 寄存器定义
+    │   ├── hmc5883l.h       # HMC5883L 磁力计驱动类
+    │   └── hmc5883l.cpp     # HMC5883L 初始化、3轴读取
     ├── fusion/
     │   ├── fusion_interface.h  # 融合算法统一接口 + quat→euler + rad↔deg
     │   ├── iekf.h              # Left-Invariant EKF 声明
@@ -63,7 +71,9 @@ AHRS/
 - 状态向量 6 维：姿态误差（3 维）+ 陀螺仪偏置（3 维）
 - 基于 IMU 运动学模型的左不变误差状态传播
 - 加速度计量测用于校正俯仰/横滚角
+- 磁力计量测用于校正航向角（yaw）
 - 实时估计并补偿陀螺仪零偏
+- 加速度异常时自适应膨胀过程噪声，恢复正常后快速收敛
 
 ## 移植
 
