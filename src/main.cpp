@@ -172,10 +172,26 @@ int main(int argc, char* argv[]) {
                 float mag_x_cal=0, mag_y_cal=0, mag_z_cal=0;
                 bool mag_ok = mag.getField(mx, my, mz);
                 if (mag_ok) {
-                    // 原始值 (Gauss) — 未经校准，直接用于 IEKF 融合
-                    mag_x_cal = mag.rawToGauss(mx);
-                    mag_y_cal = mag.rawToGauss(my);
-                    mag_z_cal = mag.rawToGauss(mz);
+                    // 原始值 (Gauss)
+                    float mx_raw = mag.rawToGauss(mx);
+                    float my_raw = mag.rawToGauss(my);
+                    float mz_raw = mag.rawToGauss(mz);
+
+                    // 硬铁 + 软铁校正 (参数来自 mag_calib 椭球拟合)
+                    // clang-format off
+                    static const float bias[3]  = {0.156471f, 0.707012f, 0.160116f};
+                    static const float W[9]     = {
+                        0.947790f, -0.027905f, 0.168617f,
+                        0.000000f,  1.016896f, -0.027516f,
+                        0.000000f,  0.000000f, 1.001215f
+                    };
+                    // clang-format on
+                    float dx = mx_raw - bias[0];
+                    float dy = my_raw - bias[1];
+                    float dz = mz_raw - bias[2];
+                    mag_x_cal = W[0]*dx + W[1]*dy + W[2]*dz;
+                    mag_y_cal = W[3]*dx + W[4]*dy + W[5]*dz;
+                    mag_z_cal = W[6]*dx + W[7]*dy + W[8]*dz;
 
                     // IEKF 磁力计融合 → yaw 可观
                     auto* iekf = dynamic_cast<IEKFFilter*>(g_algo);
