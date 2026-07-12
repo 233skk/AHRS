@@ -76,11 +76,6 @@ class IICInterface {
 };
 ```
 
-驱动层和融合层代码完全不动。已有实现：
-
-- `iic_linux.cpp` — Linux / Raspberry Pi / Luckfox
-- 可扩展：Arduino Wire、STM32 HAL、ESP-IDF
-
 ## TODO
 
 - [ ] 优化计算效率
