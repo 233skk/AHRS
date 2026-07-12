@@ -64,13 +64,14 @@ inline void quatToRot(float qw, float qx, float qy, float qz,
 
 // ---- 构造函数 ----
 IEKFFilter::IEKFFilter(float sigma_gyro, float sigma_accel,
-                       float sigma_bias, float sigma_mag, float dt)
+                       float sigma_bias, float gain, float sigma_mag, float dt)
     : qw_(1.0f), qx_(0.0f), qy_(0.0f), qz_(0.0f)
     , bx_(0.0f), by_(0.0f), bz_(0.0f)
     , sigma_gyro_(sigma_gyro)
     , sigma_accel_(sigma_accel)
     , sigma_bias_(sigma_bias)
     , sigma_mag_(sigma_mag)
+    , gain_(gain)
     , initialized_(false)
     , mag_ref_set_(false)
 {
@@ -90,7 +91,7 @@ IEKFFilter::IEKFFilter(float sigma_gyro, float sigma_accel,
 
 #define P(r,c) P_[(r)*6+(c)]
 
-void IEKFFilter::predict(float gx, float gy, float gz, float dt) {
+void IEKFFilter::predict(float gx, float gy, float gz, float dt, float q_scale) {
     float wx = gx - bx_;
     float wy = gy - by_;
     float wz = gz - bz_;
@@ -148,8 +149,9 @@ void IEKFFilter::predict(float gx, float gy, float gz, float dt) {
     }
 
     // 加过程噪声: 陀螺噪声 ∝ Δt², 偏置游走 ∝ Δt
-    float q_gyro  = sigma_gyro_*sigma_gyro_ * dt*dt;
-    float q_bias  = sigma_bias_*sigma_bias_ * dt;
+    // q_scale > 1 时是自适应模式（加速度异常期膨胀 P，加速恢复）
+    float q_gyro  = sigma_gyro_*sigma_gyro_ * dt*dt * q_scale;
+    float q_bias  = sigma_bias_*sigma_bias_ * dt * q_scale;
     P_new[0]  += q_gyro;   P_new[7]  += q_gyro;   P_new[14] += q_gyro;
     P_new[21] += q_bias;   P_new[28] += q_bias;   P_new[35] += q_bias;
 
@@ -175,7 +177,7 @@ void IEKFFilter::updateAccel(float ax, float ay, float az) {
     float nuy = ay - gy;
     float nuz = az - gz;
 
-    float R_noise = sigma_accel_ * sigma_accel_;
+    float R_noise = sigma_accel_ * sigma_accel_ / gain_;  // gain>1 → 更激进修正
 
     // PHT = P·H^T (6×3), H = [g_pred^∧ | 0]
     float PHT[18];
@@ -318,7 +320,9 @@ void IEKFFilter::applyCorrection(float dxi_x, float dxi_y, float dxi_z,
 }
 
 // ---- 主更新接口 ----
-// 仅在加速度模值正常 (0.5g~1.5g) 时做测量更新, 避免高速运动时加速度计混入运动加速度
+// 加速度模值正常 (0.5g~1.5g) → 正常预测 + 测量更新
+// 加速度异常 (自由落体/冲击) → 预测 + 100x 过程噪声膨胀 P
+//   膨胀后恢复正常时，卡尔曼增益自然变大 → 快速收敛
 void IEKFFilter::update(float gx, float gy, float gz,
                          float ax, float ay, float az,
                          float dt) {
@@ -328,10 +332,13 @@ void IEKFFilter::update(float gx, float gy, float gz,
     }
     if (dt < 1e-6f || dt > 1.0f) return;
 
-    predict(gx, gy, gz, dt);
-
     float accel_mag = sqrtf(ax*ax + ay*ay + az*az);
-    if (accel_mag > 0.5f && accel_mag < 1.5f) {
+    bool normal = (accel_mag > 0.5f && accel_mag < 1.5f);
+
+    // 自适应 Q: 正常时 q_scale=1, 异常时放大 100 倍
+    predict(gx, gy, gz, dt, normal ? 1.0f : 100.0f);
+
+    if (normal) {
         updateAccel(ax, ay, az);
     }
 }

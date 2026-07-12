@@ -16,6 +16,7 @@ public:
     IEKFFilter(float sigma_gyro  = 0.05f,
                float sigma_accel = 0.5f,
                float sigma_bias  = 0.0003f,
+               float gain        = 2.0f,
                float sigma_mag   = 0.1f,
                float dt          = 0.005f);
 
@@ -41,7 +42,7 @@ public:
 private:
     float qw_, qx_, qy_, qz_;       // 单位四元数
     float bx_, by_, bz_;            // 陀螺偏置估计
-    float sigma_gyro_, sigma_accel_, sigma_bias_, sigma_mag_;
+    float sigma_gyro_, sigma_accel_, sigma_bias_, sigma_mag_, gain_;
     float P_[36];                   // 6×6 协方差
     bool  initialized_;
 
@@ -49,7 +50,7 @@ private:
     float mw_x_, mw_y_, mw_z_;
     bool  mag_ref_set_;
 
-    void predict(float gx, float gy, float gz, float dt);
+    void predict(float gx, float gy, float gz, float dt, float q_scale = 1.0f);
     void updateAccel(float ax, float ay, float az);
     void initFromAccel(float ax, float ay, float az);
     void applyCorrection(float dxi_x, float dxi_y, float dxi_z,
